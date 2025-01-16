@@ -4,6 +4,12 @@ Share song lyrics easily
 ## What is this?
 > Sgrodolix is a free and open-source service that allows you to share your favorite song lyrics!
 
+
+
+<img src="./assets/example.jpg" width="350rem">
+
+
+
 You can access an hosted instance at https://sgrodolix.website 
 
 ## Setup
