@@ -166,7 +166,7 @@ def download_cover(data):
 @api.route('/')
 @app.route('/')
 async def home():
-    return '<h1>Sgrodolex API</h1>'
+    return '<h1>Sgrodolix API</h1>'
 
 app.register_blueprint(api)
 
