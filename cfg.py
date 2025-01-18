@@ -24,5 +24,5 @@ CANVAS = (864, 1536)
 NOT_FOUND_MSG = {
     'lyrics': [],
     'title': 'Not Found',
-    'artist': 'D:'
+    'author': 'D:'
 }

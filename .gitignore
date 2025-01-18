@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Sgrodolix
+cache/
+cfg.py
+
 # C extensions
 *.so
 
