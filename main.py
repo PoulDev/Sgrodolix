@@ -78,7 +78,7 @@ async def getLyrics():
             'lyrics': parseLyrics(data),
             'title': parseTitle(data),
             'author': parseAuthor(data),
-            'cover': {'url': parseImg(data)},
+            'cover': {'url': parseImg(data, song_id)},
             'song_id': song_id,
         }
 
