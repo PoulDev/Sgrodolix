@@ -25,6 +25,7 @@ CORS(app)
 @api.route('/share', methods=['POST'])
 async def share():
     song_id = request.args['song_id']
+    color = request.args.get('color')
     if '/' in song_id or '.' in song_id: 
         return 'poco chill da parte tua'
 
@@ -46,7 +47,16 @@ async def share():
     if res is None or im is None:
         return 'No image found :/'
 
-    color = '#' + ''.join(hex(c)[2:].zfill(2) for c in getDominantColor(im))
+    # Check if the color is valid ( accepted: #fff, #ffffff, #ffffffff (RGB & RGBA) )
+    if len(color) not in (8, 6, 3): color = None
+    else:
+        try: int(color, 16)
+        except: pass
+
+    if color is None:
+        color = '#' + ''.join(hex(c)[2:].zfill(2) for c in getDominantColor(im))
+    else:
+        color = '#' + color
 
     img_io = BytesIO()
     img = shareLyrics(im, res['author'], res['title'], '\n'.join(request.get_json()), color)
@@ -87,6 +97,14 @@ async def getLyrics():
         thread.start()
 
     return data
+
+@api.errorhandler(500)
+def internal(error):
+    return {'err': True, 'msg': random.choice([
+        'riprova piu\' tardi king',
+        'non c\'e cosa che odio piu\' degli errori (dopo i ceci)',
+        'ipotizziamo che ocane abbia un cane...',
+    ])}
 
 @api.route('/')
 @app.route('/')
