@@ -1,11 +1,22 @@
 import aiohttp
+import requests
 import re
 from bs4 import BeautifulSoup
 
 from cfg import TOKEN
 
-def parseLyrics(lyrics) -> list[str]:
-    soup = BeautifulSoup(lyrics, 'html.parser')
+def appleMusicImage(song_id):
+    apple_mess = requests.get(f'https://genius.com/songs/{song_id}/apple_music_player?react=1&x-ab-test-tonefuse_interstitial=undefined').text
+    image_links = re.findall(r'https:\/\/images.genius.com\/.*\.png', apple_mess)
+
+    if len(image_links) >= 1:
+        return image_links[0]
+    
+    return None
+
+
+def parseLyrics(content) -> list[str]:
+    soup = BeautifulSoup(content, 'html.parser')
     lyrics = []
 
     for tag in soup.find_all('div', attrs={"data-lyrics-container": "true"}):
@@ -16,8 +27,8 @@ def parseLyrics(lyrics) -> list[str]:
 
     return lyrics
 
-def parseTitle(lyrics):
-    soup = BeautifulSoup(lyrics, 'html.parser')
+def parseTitle(content):
+    soup = BeautifulSoup(content, 'html.parser')
     title = soup.find('span', class_=re.compile(r'^SongHeader-desktop-\w+'))
     if title is None:
         title = 'Unknown'
@@ -26,8 +37,8 @@ def parseTitle(lyrics):
 
     return title
 
-def parseAuthor(lyrics):
-    soup = BeautifulSoup(lyrics, 'html.parser')
+def parseAuthor(content):
+    soup = BeautifulSoup(content, 'html.parser')
     author = soup.find('a', class_=re.compile(r'^StyledLink-\w+'), attrs={"href": re.compile(r'^https://genius.com/artists/\w+')})
     if author is None:
         author = 'Unknown'
@@ -36,16 +47,20 @@ def parseAuthor(lyrics):
 
     return author
 
-def parseImg(lyrics):
-    soup = BeautifulSoup(lyrics, 'html.parser')
+def parseImg(content, song_id):
+    soup = BeautifulSoup(content, 'html.parser')
     img = soup.find('img', class_=re.compile(r'SizedImage-sc-\w+'), attrs={"src": re.compile(r'https://images.genius.com/\w+')})
     if img is None:
-        for img in soup.find_all('img', class_=re.compile(r'^SizedImage-sc-\w+')):
-            if 'SongHeader-desktop-' in img['class']:
-                img = img['src']
-                break
+        for im in soup.find_all('img', attrs={'class': re.compile(r'SizedImage-.*SongHeader-desktop-.*')}):
+            if im.get('src') is None: continue
+            img = im['src']
+            break
     else:
         img = img['src']
+
+    if img is None: 
+        # Get the image from apple music :|
+        return appleMusicImage(song_id)
 
     return img
 
@@ -59,8 +74,7 @@ async def search(title, artist) -> dict | None:
                                         headers={'Authorization': f'Bearer {TOKEN}'},
                                         timeout=aiohttp.ClientTimeout(total=5)) as res:
                     data = await res.json()
-            except (aiohttp.ClientError, TimeoutError):
-                pass
+            except (aiohttp.ClientError, TimeoutError): pass
             else:
                 break
     else: # Data not set 
@@ -72,4 +86,8 @@ async def search(title, artist) -> dict | None:
             res = result['result']
             return res
     return res
+
+if __name__ == '__main__':
+    res = requests.get('https://genius.com/Salmo-a-te-e-famiglia-lyrics').text
+    print(parseImg(res, '9857491'))
 
