@@ -2,6 +2,7 @@ import aiohttp
 import threading
 import os
 import time
+import random
 
 import lyricsgenius as lg
 from flask_cors import CORS
@@ -25,7 +26,7 @@ CORS(app)
 @api.route('/share', methods=['POST'])
 async def share():
     song_id = request.args['song_id']
-    color = request.args.get('color')
+    color = request.args.get('color', '')
     if '/' in song_id or '.' in song_id: 
         return 'poco chill da parte tua'
 
@@ -51,7 +52,7 @@ async def share():
     if len(color) not in (8, 6, 3): color = None
     else:
         try: int(color, 16)
-        except: pass
+        except: color = None
 
     if color is None:
         color = '#' + ''.join(hex(c)[2:].zfill(2) for c in getDominantColor(im))
