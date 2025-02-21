@@ -60,7 +60,10 @@ def shareLyrics(cover: Image, artist: str, title: str, lyrics: str, color):
     print(color)
     text_color = '#030303' if not isDark(color) else '#EAEAEA'
     subtitle_color = '#1D1D1D' if not isDark(color) else '#AAAAAA'
-    title = title[:27]
+    if len(title) > 28:
+        title = title[:25] + '...'
+    if len(artist) > 33:
+        artist = artist[:30] + '...'
     original = Image.new('RGB', CANVAS, color=color)
 
     lyricsImage = getLyricsImg(lyrics, color, text_color)
