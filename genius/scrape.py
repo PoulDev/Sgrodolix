@@ -68,7 +68,7 @@ def parseTitleFromLyrics(lyrics):
 
 def parseAuthor(content):
     soup = BeautifulSoup(content, 'html.parser')
-    author = soup.find('a', class_=re.compile(r'^StyledLink-\w+'), attrs={"href": re.compile(r'^https://genius.com/artists/\w+')})
+    author = soup.find('a', class_=re.compile(r'^StyledLink\w+'), attrs={"href": re.compile(r'^https://genius.com/artists/\w+')})
     if author is None:
         author = 'Unknown'
     else:
@@ -78,7 +78,7 @@ def parseAuthor(content):
 
 def parseImg(content, song_id):
     soup = BeautifulSoup(content, 'html.parser')
-    img = soup.find('img', class_=re.compile(r'SizedImage-sc-\w+'), attrs={"src": re.compile(r'https://images.genius.com/\w+')})
+    img = soup.find('img', class_=re.compile(r'SizedImage\w+'), attrs={"src": re.compile(r'https://images.genius.com/\w+')})
     if img is None:
         for im in soup.find_all('img', attrs={'class': re.compile(r'SizedImage-.*SongHeader-desktop-.*')}):
             if im.get('src') is None: continue
