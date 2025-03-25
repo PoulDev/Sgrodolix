@@ -39,7 +39,7 @@ def parseTitle(content):
 
 def parseTitleFromLyrics(lyrics):
     first_line = lyrics[0]
-    start = first_line.index('"')
+    start = first_line.index('"')+1
     return first_line[start:-2]
 
 def parseAuthor(content):
