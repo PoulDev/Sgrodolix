@@ -37,6 +37,11 @@ def parseTitle(content):
 
     return title
 
+def parseTitleFromLyrics(lyrics):
+    first_line = lyrics[0]
+    start = first_line.index('"')
+    return first_line[start:-2]
+
 def parseAuthor(content):
     soup = BeautifulSoup(content, 'html.parser')
     author = soup.find('a', class_=re.compile(r'^StyledLink-\w+'), attrs={"href": re.compile(r'^https://genius.com/artists/\w+')})

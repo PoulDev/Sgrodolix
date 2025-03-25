@@ -85,9 +85,13 @@ async def getLyrics():
             async with session.get('https://genius.com' + search_res['path']) as res:
                 data = await res.text()
 
+        lyrics = parseLyrics(data)
+        title = parseTitle(data)
+        if title == 'Unknown':
+            title = parseTitleFromLyrics(lyrics)
         data = {
-            'lyrics': parseLyrics(data),
-            'title': parseTitle(data),
+            'lyrics': lyrics,
+            'title':  title,
             'author': parseAuthor(data),
             'cover': {'url': parseImg(data, song_id)},
             'song_id': song_id,
