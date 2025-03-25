@@ -12,7 +12,7 @@ from flask import Flask, Blueprint, request, send_file
 from share import shareLyrics
 from share import getDominantColor
 from genius import search, parseTitle, parseImg, parseLyrics, parseAuthor, parseTitleFromLyrics
-from genius import download_cover, get_local_cover, load_local_song, update_data
+from genius import download_cover, get_local_cover, load_local_song, update_data, get_headers
 
 from cfg import NOT_FOUND_MSG, TOKEN, BASE_PATH, HOST
 
@@ -80,10 +80,10 @@ async def getLyrics():
     print(search_res['path'])
 
     data = await load_local_song(song_id)
-    mustCorrect = data.get('title') == 'Unkown' or data.get('author') == 'Unknown'
+    mustCorrect = data.get('title') == 'Unkown' or data.get('author') == 'Unknown' or data.get('cover', {}).get('url') is None
     if data == {} or mustCorrect:
         async with aiohttp.ClientSession() as session:
-            async with session.get('https://genius.com' + search_res['path']) as res:
+            async with session.get('https://genius.com' + search_res['path'], headers=get_headers()) as res:
                 res_data = await res.text()
 
         lyrics = parseLyrics(res_data)
@@ -100,7 +100,7 @@ async def getLyrics():
 
         update_data(song_id, data)
 
-    if not os.path.exists(f'{BASE_PATH}/cache/covers/{song_id}.jpg') or not os.path.exists(f'{BASE_PATH}/cache/metadata/{song_id}.json'):
+    if mustCorrect or not os.path.exists(f'{BASE_PATH}/cache/covers/{song_id}.jpg') or not os.path.exists(f'{BASE_PATH}/cache/metadata/{song_id}.json'):
         thread = threading.Thread(target=download_cover, args=(data,))
         thread.start()
 
