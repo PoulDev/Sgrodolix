@@ -16,6 +16,10 @@ def get_remote_cover(song_id, cover_art_url):
     im.save(f'{BASE_PATH}/cache/covers/{song_id}.jpg', 'JPEG', quality=70)
     return im
 
+def update_data(song_id, data):
+    with open(f'{BASE_PATH}/cache/metadata/{song_id}.json', 'w', encoding='utf-8') as f:
+        f.write(json.dumps(data))
+
 def download_cover(data):
     song_id = data['song_id']
 
@@ -26,8 +30,7 @@ def download_cover(data):
 
     data['palette'] = palette
 
-    with open(f'{BASE_PATH}/cache/metadata/{song_id}.json', 'w', encoding='utf-8') as f:
-        f.write(json.dumps(data))
+    update_data(song_id, data)
 
 async def get_local_cover(song_id):
     if not os.path.exists(f'{BASE_PATH}/cache/covers/{song_id}.jpg'):

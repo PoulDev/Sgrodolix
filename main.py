@@ -12,7 +12,7 @@ from flask import Flask, Blueprint, request, send_file
 from share import shareLyrics
 from share import getDominantColor
 from genius import search, parseTitle, parseImg, parseLyrics, parseAuthor, parseTitleFromLyrics
-from genius import download_cover, get_local_cover, load_local_song
+from genius import download_cover, get_local_cover, load_local_song, update_data
 
 from cfg import NOT_FOUND_MSG, TOKEN, BASE_PATH, HOST
 
@@ -45,7 +45,7 @@ async def share():
     res = await load_local_song(song_id)
     im = await get_local_cover(song_id)
     
-    if res is None or im is None:
+    if res == {} or im is None:
         return 'No image found :/'
 
     # Check if the color is valid ( accepted: #fff, #ffffff, #ffffffff (RGB & RGBA) )
@@ -80,7 +80,8 @@ async def getLyrics():
     print(search_res['path'])
 
     data = await load_local_song(song_id)
-    if data is None or data['title'] == 'Unkown' or data['author'] == 'Unknown':
+    mustCorrect = data['title'] == 'Unkown' or data['author'] == 'Unknown'
+    if data == {} or mustCorrect:
         async with aiohttp.ClientSession() as session:
             async with session.get('https://genius.com' + search_res['path']) as res:
                 data = await res.text()
@@ -89,13 +90,15 @@ async def getLyrics():
         title = parseTitle(data)
         if title == 'Unknown':
             title = parseTitleFromLyrics(lyrics)
-        data = {
+        data.update({
             'lyrics': lyrics,
             'title':  title,
             'author': parseAuthor(data),
             'cover': {'url': parseImg(data, song_id)},
             'song_id': song_id,
-        }
+        })
+
+        update_data(song_id, data)
 
     if not os.path.exists(f'{BASE_PATH}/cache/covers/{song_id}.jpg') or not os.path.exists(f'{BASE_PATH}/cache/metadata/{song_id}.json'):
         thread = threading.Thread(target=download_cover, args=(data,))

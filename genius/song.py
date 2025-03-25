@@ -10,5 +10,5 @@ async def load_local_song(song_id: str) -> dict | None:
         with open(f'{BASE_PATH}/cache/metadata/{song_id}.json', 'r') as f:
             data = json.loads(f.read())
     else:
-        return None
+        return {}
     return data
