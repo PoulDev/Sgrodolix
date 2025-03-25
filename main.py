@@ -11,7 +11,7 @@ from flask import Flask, Blueprint, request, send_file
 
 from share import shareLyrics
 from share import getDominantColor
-from genius import search, parseTitle, parseImg, parseLyrics, parseAuthor
+from genius import search, parseTitle, parseImg, parseLyrics, parseAuthor, parseTitleFromLyrics
 from genius import download_cover, get_local_cover, load_local_song
 
 from cfg import NOT_FOUND_MSG, TOKEN, BASE_PATH, HOST
