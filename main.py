@@ -84,17 +84,17 @@ async def getLyrics():
     if data == {} or mustCorrect:
         async with aiohttp.ClientSession() as session:
             async with session.get('https://genius.com' + search_res['path']) as res:
-                data = await res.text()
+                res_data = await res.text()
 
-        lyrics = parseLyrics(data)
-        title = parseTitle(data)
+        lyrics = parseLyrics(res_data)
+        title = parseTitle(res_data)
         if title == 'Unknown':
             title = parseTitleFromLyrics(lyrics)
         data.update({
             'lyrics': lyrics,
             'title':  title,
-            'author': parseAuthor(data),
-            'cover': {'url': parseImg(data, song_id)},
+            'author': parseAuthor(res_data),
+            'cover': {'url': parseImg(res_data, song_id)},
             'song_id': song_id,
         })
 
