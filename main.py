@@ -80,7 +80,7 @@ async def getLyrics():
     print(search_res['path'])
 
     data = await load_local_song(song_id)
-    mustCorrect = data['title'] == 'Unkown' or data['author'] == 'Unknown'
+    mustCorrect = data.get('title') == 'Unkown' or data.get('author') == 'Unknown'
     if data == {} or mustCorrect:
         async with aiohttp.ClientSession() as session:
             async with session.get('https://genius.com' + search_res['path']) as res:
