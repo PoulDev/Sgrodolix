@@ -3,6 +3,10 @@
 # IMPORTANT: GENIUS API TOKEN.
 TOKEN = 'CHANGE ME'
 
+# PROMETHEUS STATS
+PROMETHEUS_ENABLED = True
+PROMETHEUS_TOKEN = "CHANGE-ME"
+
 # The server will save song covers & data here
 BASE_PATH = '.' 
 

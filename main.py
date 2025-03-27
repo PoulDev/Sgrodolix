@@ -14,14 +14,20 @@ from share import getDominantColor
 from genius import search, parseTitle, parseImg, parseLyrics, parseAuthor, parseTitleFromLyrics
 from genius import download_cover, get_local_cover, load_local_song, update_data, get_headers
 
-from cfg import NOT_FOUND_MSG, TOKEN, BASE_PATH, HOST
+from cfg import NOT_FOUND_MSG, TOKEN, BASE_PATH, HOST, PROMETHEUS_ENABLED
+
+from stats.stats import stats, Prometheus
 
 genius = lg.Genius(TOKEN)
 
 api = Blueprint('api', __name__, url_prefix='/api')
 app = Flask(__name__)
-CORS(app)
 
+if (PROMETHEUS_ENABLED):
+    app.register_blueprint(stats)
+    Prometheus(app)
+
+CORS(app)
 
 @api.route('/share', methods=['POST'])
 async def share():
