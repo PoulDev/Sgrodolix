@@ -4,7 +4,7 @@ from flask import Blueprint, Flask, request, abort
 from cfg import PROMETHEUS_ENABLED, PROMETHEUS_TOKEN
 import time
 
-stats = Blueprint('stats', __name__, url_prefix='/')
+stats = Blueprint('stats', __name__, url_prefix='/api')
 
 class Prometheus:
     def __init__(self, app: Flask):
