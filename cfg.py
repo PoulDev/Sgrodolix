@@ -4,7 +4,7 @@
 TOKEN = 'CHANGE ME'
 
 # PROMETHEUS STATS
-PROMETHEUS_ENABLED = True
+PROMETHEUS_ENABLED = False
 PROMETHEUS_TOKEN = "CHANGE-ME"
 
 # The server will save song covers & data here
