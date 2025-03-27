@@ -8,8 +8,9 @@ stats = Blueprint('stats', __name__, url_prefix='/api')
 
 class Prometheus:
     def __init__(self, app: Flask):
-        self.searched_songs = Counter('searched_songs', 'Number of songs looked up', ['endpoint'])
         self.endpoint_latency = Histogram('endpoint_latency_seconds', 'Endpoint response time', ['endpoint'])
+        self.shared_artists = Histogram('artists_shares', 'Shared Artists Stats', ['artist'])
+        self.searched_songs = Counter('searched_songs', 'Number of songs looked up', ['endpoint'])
         self.error_counter = Counter('endpoint_errors', 'Total errors per endpoint and status code', ['endpoint', 'status_code'])
 
         app.after_request(self.after_request)

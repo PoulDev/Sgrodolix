@@ -25,7 +25,7 @@ app = Flask(__name__)
 
 if (PROMETHEUS_ENABLED):
     app.register_blueprint(stats)
-    Prometheus(app)
+    prometheus = Prometheus(app)
 
 CORS(app)
 
@@ -109,6 +109,9 @@ async def getLyrics():
     if mustCorrect or not os.path.exists(f'{BASE_PATH}/cache/covers/{song_id}.jpg') or not os.path.exists(f'{BASE_PATH}/cache/metadata/{song_id}.json'):
         thread = threading.Thread(target=download_cover, args=(data,))
         thread.start()
+
+    if PROMETHEUS_ENABLED:
+        prometheus.shared_artists.labels(artist=data['author']).observe(1)
 
     return data
 
