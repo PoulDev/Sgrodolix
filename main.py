@@ -12,7 +12,7 @@ from flask import Flask, Blueprint, request, send_file
 from share import shareLyrics
 from share import getDominantColor
 from genius import search, parseTitle, parseImg, parseLyrics, parseAuthor, parseTitleFromLyrics
-from genius import download_cover, get_local_cover, load_local_song, update_data, get_headers
+from genius import download_cover, get_local_cover, load_local_song, update_data, getHeaders
 
 from cfg import NOT_FOUND_MSG, TOKEN, BASE_PATH, HOST, PROMETHEUS_ENABLED
 
@@ -90,7 +90,7 @@ async def getLyrics():
     mustCorrect = data.get('title') == 'Unkown' or data.get('author') == 'Unknown' or data.get('cover', {}).get('url') is None
     if data == {} or mustCorrect:
         async with aiohttp.ClientSession() as session:
-            async with session.get('https://genius.com' + search_res['path'], headers=get_headers()) as res:
+            async with session.get('https://genius.com' + search_res['path'], headers=getHeaders()) as res:
                 res_data = await res.text()
 
         lyrics = parseLyrics(res_data)
