@@ -62,9 +62,14 @@ def parseTitle(content):
     return title
 
 def parseTitleFromLyrics(lyrics):
-    first_line = lyrics[0]
-    start = first_line.index('"')+1
-    return first_line[start:-2]
+    try:
+        first_line = lyrics[0]
+        start = first_line.index('"')+1
+        return first_line[start:-2]
+    except ValueError as e:
+        print(e)
+        print('first 3 lines', lyrics[:3])
+        return 'Unknown'
 
 def parseAuthor(content):
     soup = BeautifulSoup(content, 'html.parser')
