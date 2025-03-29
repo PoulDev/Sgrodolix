@@ -112,7 +112,7 @@ async def getLyrics():
         thread.start()
 
     if PROMETHEUS_ENABLED:
-        prometheus.shared_artists.labels(artist=data['author']).inc()
+        prometheus.searched_artists.labels(artist=data['author']).inc()
 
     return data
 
