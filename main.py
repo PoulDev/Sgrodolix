@@ -23,6 +23,7 @@ genius = lg.Genius(TOKEN)
 api = Blueprint('api', __name__, url_prefix='/api')
 app = Flask(__name__)
 
+prometheus = None
 if (PROMETHEUS_ENABLED):
     app.register_blueprint(stats)
     prometheus = Prometheus(app)
@@ -111,7 +112,7 @@ async def getLyrics():
         thread.start()
 
     if PROMETHEUS_ENABLED:
-        prometheus.shared_artists.labels(artist=data['author']).observe(1)
+        prometheus.shared_artists.labels(artist=data['author']).inc()
 
     return data
 
