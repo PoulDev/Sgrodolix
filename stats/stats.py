@@ -41,7 +41,6 @@ def metrics():
 
     token = auth_header.split(" ")[1]
     if token != PROMETHEUS_TOKEN:
-        print(token, PROMETHEUS_TOKEN)
         abort(403)
 
     return generate_latest(), 200, {'Content-Type': 'text/plain'}
