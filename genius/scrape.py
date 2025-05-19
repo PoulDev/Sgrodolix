@@ -54,7 +54,7 @@ def parseLyrics(content) -> list[str]:
 def parseTitle(content):
     # SongHeader-desktop__HiddenMask-sc-ffb24f94-11 dHpSmS
     soup = BeautifulSoup(content, 'html.parser')
-    title = soup.find('span', class_=lambda x: x and 'SongHeader-desktop' in x)
+    title = soup.find('span', class_=re.compile('SongHeader.{0,5}-desktop'))
     if title is None:
         title = 'Unknown'
     else:
