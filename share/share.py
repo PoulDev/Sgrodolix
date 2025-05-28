@@ -53,7 +53,7 @@ def getLyricsImg(lyrics, color, text_color):
     
 
 def isDark(color):
-    luminance = 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]
+    luminance = 0.2126 * float(color[0]) + 0.7152 * float(color[1]) + 0.0722 * float(color[2]) 
     return luminance <= TRIGGER
 
 
