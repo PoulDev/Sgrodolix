@@ -15,7 +15,7 @@ F_TITLE_SIZE = 25
 F_AUTHOR_SIZE = 20
 F_LYRICS_SIZE = 45
 
-TRIGGER = 70
+TRIGGER = 190
 
 LINE_SPACING = int(F_LYRICS_SIZE * 1.25)
 VERSE_SPACING = 30
@@ -53,7 +53,8 @@ def getLyricsImg(lyrics, color, text_color):
     
 
 def isDark(color):
-    return int(color[1:3], 16) < TRIGGER and int(color[3:5], 16) < TRIGGER and int(color[5:7], 16) < TRIGGER
+    luminance = 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]
+    return luminance <= TRIGGER
 
 
 def shareLyrics(cover: Image, artist: str, title: str, lyrics: str, color):
