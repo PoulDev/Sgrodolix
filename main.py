@@ -1,142 +1,201 @@
-import aiohttp
-import threading
+import json
 import os
+import threading
 import time
-import random
-
-import lyricsgenius as lg
-from flask_cors import CORS
 from io import BytesIO
-from flask import Flask, Blueprint, request, send_file
 
-from share import shareLyrics
-from share import getDominantColor
-from genius import search, parseTitle, parseImg, parseLyrics, parseAuthor, parseTitleFromLyrics
-from genius import download_cover, get_local_cover, load_local_song, update_data, getHeaders
+import aiohttp
+import lyricsgenius as lg
+import redis
+from flask import Blueprint, Flask, request, send_file
+from flask_cors import CORS
 
-from cfg import NOT_FOUND_MSG, TOKEN, BASE_PATH, HOST, PROMETHEUS_ENABLED
-
-from stats.stats import stats, Prometheus
+from cfg import (BASE_PATH, HOST, NOT_FOUND_MSG, PROMETHEUS_ENABLED,
+                 REDIS_CACHE_TIME, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT,
+                 TOKEN)
+from genius import (download_cover, get_local_cover, getHeaders,
+                    load_local_song, parseAuthor, parseImg, parseLyrics,
+                    parseTitle, parseTitleFromLyrics, search, update_data)
+from share import getDominantColor, shareLyrics
+from stats.stats import Prometheus, stats
 
 genius = lg.Genius(TOKEN)
 
-api = Blueprint('api', __name__, url_prefix='/api')
+redis_conn: redis.StrictRedis
+
+api = Blueprint("api", __name__, url_prefix="/api")
 app = Flask(__name__)
 
-prometheus = None
-if (PROMETHEUS_ENABLED):
+prometheus: Prometheus | None = None
+if PROMETHEUS_ENABLED:
     app.register_blueprint(stats)
     prometheus = Prometheus(app)
 
 CORS(app)
 
-@api.route('/share', methods=['POST'])
+
+def check_value(s: str, max_length: int = 200) -> bool:
+    return (
+        "/" in s
+        or "." in s
+        or "%" in s
+        or "\\" in s
+        or "?" in s
+        or "&" in s
+        or len(s) > max_length
+    )
+
+
+@api.route("/share", methods=["POST"])
 async def share():
-    song_id = request.args['song_id']
-    color = request.args.get('color', '')
-    if '/' in song_id or '.' in song_id: 
-        return 'poco chill da parte tua'
+    song_id = request.args["song_id"]
+    color = request.args.get("color", "")
+    if check_value(song_id, 50):
+        return {"err": True, "msg": "poco chill da parte tua"}, 400
+
+    if not os.path.exists(f"{BASE_PATH}/cache/metadata/{song_id}.json"):
+        return {"err": True, "msg": "Local song data not found!"}, 500
 
     for _ in range(10):
-        if os.path.exists(f'{BASE_PATH}/cache/metadata/{song_id}.json'): break
+        if os.path.exists(f"{BASE_PATH}/cache/covers/{song_id}.jpg"):
+            break
         time.sleep(1)
     else:
-        return 'Data download failed'
-
-    for _ in range(10):
-        if os.path.exists(f'{BASE_PATH}/cache/covers/{song_id}.jpg'): break
-        time.sleep(1)
-    else:
-        return 'Cover download failed'
+        return {"err": True, "msg": "Cover download failed"}, 500
 
     res = await load_local_song(song_id)
     im = await get_local_cover(song_id)
-    
+
     if res == {} or im is None:
-        return 'No image found :/'
+        return {"err": True, "msg": "No image found :("}, 500
 
     # Check if the color is valid ( accepted: #fff, #ffffff, #ffffffff (RGB & RGBA) )
-    if len(color) not in (8, 6, 3): color = None
+    if len(color) not in (8, 6, 3):
+        color = None
     else:
-        try: int(color, 16)
-        except: color = None
+        try:
+            int(color, 16)
+        except:
+            color = None
 
     if color is None:
-        color = '#' + ''.join(hex(c)[2:].zfill(2) for c in getDominantColor(im))
+        color = "#" + "".join(hex(c)[2:].zfill(2) for c in getDominantColor(im))
     else:
-        color = '#' + color
+        color = "#" + color
 
     img_io = BytesIO()
-    img = shareLyrics(im, res['author'], res['title'], '\n'.join(request.get_json()), color)
-    img.save(img_io, 'JPEG', quality=70)
+    img = shareLyrics(
+        im, res["author"], res["title"], "\n".join(request.get_json()), color
+    )
+    img.save(img_io, "JPEG", quality=70)
     img_io.seek(0)
-    return send_file(img_io, mimetype='image/jpeg')
+    return send_file(img_io, mimetype="image/jpeg")
 
-@api.route('/lyrics')
+
+@api.route("/lyrics")
 async def getLyrics():
-    title = request.args['t'].replace('..', '').replace('/', '')
-    artist = request.args['a'].replace('..', '').replace('/', '')
+    if check_value(request.args["t"]) or check_value(request.args["a"]):
+        return "poco chill da parte tua"
+
+    title = request.args["t"]
+    artist = request.args["a"]
+
+    cached_result = redis_conn.get(f"{artist}{title}")
+    if not cached_result is None:
+        data = json.loads(str(cached_result))
+        if not prometheus is None:
+            prometheus.searched_artists.labels(artist=data["author"]).inc()
+        return cached_result
 
     search_res = await search(title, artist)
 
     if search_res is None:
         return NOT_FOUND_MSG
 
-    song_id = search_res['api_path'].split('/')[2]
-
-    print(search_res['path'])
+    song_id = search_res["api_path"].split("/")[2]
 
     data = await load_local_song(song_id)
-    mustCorrect = data.get('title') == 'Unkown' or data.get('author') == 'Unknown' or data.get('cover', {}).get('url') is None
-    if data == {} or mustCorrect:
+    mustCorrect = (
+        data.get("title") == "Unkown"
+        or data.get("author") == "Unknown"
+        or data.get("cover", {}).get("url") is None
+    )
+
+    # Update song data
+    if not data or mustCorrect:
         async with aiohttp.ClientSession() as session:
-            async with session.get('https://genius.com' + search_res['path'], headers=getHeaders()) as res:
+            async with session.get(
+                "https://genius.com" + search_res["path"], headers=getHeaders()
+            ) as res:
                 res_data = await res.text()
 
         lyrics = parseLyrics(res_data)
         title = parseTitle(res_data)
-        if title == 'Unknown':
+        if title == "Unknown":
             title = parseTitleFromLyrics(lyrics)
-        data.update({
-            'lyrics': lyrics,
-            'title':  title,
-            'author': parseAuthor(res_data),
-            'cover': {'url': parseImg(res_data, song_id)},
-            'song_id': song_id,
-        })
+
+        data.update(
+            {
+                "lyrics": lyrics,
+                "title": title,
+                "author": parseAuthor(res_data),
+                "cover": {"url": parseImg(res_data, song_id)},
+                "song_id": song_id,
+            }
+        )
 
         update_data(song_id, data)
 
-    if mustCorrect or not os.path.exists(f'{BASE_PATH}/cache/covers/{song_id}.jpg') or not os.path.exists(f'{BASE_PATH}/cache/metadata/{song_id}.json'):
+    # Update song cover
+    if (
+        mustCorrect
+        or not os.path.exists(f"{BASE_PATH}/cache/covers/{song_id}.jpg")
+        or not os.path.exists(f"{BASE_PATH}/cache/metadata/{song_id}.json")
+    ):
         thread = threading.Thread(target=download_cover, args=(data,))
         thread.start()
 
-    if PROMETHEUS_ENABLED:
-        prometheus.searched_artists.labels(artist=data['author']).inc()
+    # Collect analytics
+    if not prometheus is None:
+        prometheus.searched_artists.labels(artist=data["author"]).inc()
+
+    redis_conn.set(f"{artist}{title}", json.dumps(data), ex=REDIS_CACHE_TIME)
 
     return data
 
+
 @api.errorhandler(500)
 def internal(error):
-    return {'err': True, 'msg': random.choice([
-        'riprova piu\' tardi king',
-        'non c\'e cosa che odio piu\' degli errori (dopo i ceci)',
-        'ipotizziamo che ocane abbia un cane...',
-    ])}
+    return {"err": True, "msg": "Buttata di fuori"}
 
-@api.route('/')
-@app.route('/')
+
+@api.route("/")
+@app.route("/")
 async def home():
-    return '<h1>Sgrodolix API</h1>'
+    return "<h1>Sgrodolix API</h1>"
+
 
 app.register_blueprint(api)
 
-if __name__ == '__main__':
-    CACHE_PATH = os.path.join(BASE_PATH, 'cache')
-    COVERS_PATH = os.path.join(CACHE_PATH, 'covers')
-    DATA_PATH = os.path.join(CACHE_PATH, 'metadata')
-    if not os.path.exists(CACHE_PATH): os.mkdir(CACHE_PATH)
-    if not os.path.exists(COVERS_PATH): os.mkdir(COVERS_PATH)
-    if not os.path.exists(DATA_PATH): os.mkdir(DATA_PATH)
+if __name__ == "__main__":
+    CACHE_PATH = os.path.join(BASE_PATH, "cache")
+    COVERS_PATH = os.path.join(CACHE_PATH, "covers")
+    DATA_PATH = os.path.join(CACHE_PATH, "metadata")
+    if not os.path.exists(CACHE_PATH):
+        os.mkdir(CACHE_PATH)
+    if not os.path.exists(COVERS_PATH):
+        os.mkdir(COVERS_PATH)
+    if not os.path.exists(DATA_PATH):
+        os.mkdir(DATA_PATH)
+
+    redis_conn = redis.StrictRedis(
+        host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD, decode_responses=True
+    )
+
+    try:
+        redis_conn.ping()
+    except redis.ConnectionError:
+        print("Unable to connect to Redis.")
+        exit(1)
 
     app.run(HOST[0], HOST[1], debug=False)

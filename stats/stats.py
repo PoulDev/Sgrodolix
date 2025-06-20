@@ -7,6 +7,11 @@ import time
 stats = Blueprint('stats', __name__, url_prefix='/api')
 
 class Prometheus:
+    endpoint_latency: Histogram
+    searched_artists: Counter
+    searched_songs: Counter
+    error_counter: Counter
+
     def __init__(self, app: Flask):
         self.endpoint_latency = Histogram('endpoint_latency_seconds', 'Endpoint response time', ['endpoint'])
         self.searched_artists = Counter('searched_artists', 'Shared Artists Stats', ['artist'])

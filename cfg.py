@@ -7,6 +7,13 @@ TOKEN = 'CHANGE ME'
 PROMETHEUS_ENABLED = False
 PROMETHEUS_TOKEN = "CHANGE-ME"
 
+# Search results caching with Redis
+REDIS_CACHING_ENABLED = True
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+REDIS_PASSWORD = None # Set the password if you have one
+REDIS_CACHE_TIME = 60 * 60
+
 # The server will save song covers & data here
 BASE_PATH = '.' 
 
@@ -30,3 +37,4 @@ NOT_FOUND_MSG = {
     'title': 'Not Found',
     'author': 'D:'
 }
+
