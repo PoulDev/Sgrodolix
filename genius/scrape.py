@@ -3,6 +3,7 @@ import requests
 import random
 import re
 from bs4 import BeautifulSoup
+import urllib.parse
 
 from cfg import TOKEN
 
@@ -105,7 +106,7 @@ async def search(title, artist) -> dict | None:
         # Sorry for the nesting hell
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.get('https://api.genius.com/search?q=' + title + '%20' + artist,
+                async with session.get('https://api.genius.com/search?q=' + urllib.parse.quote_plus(title) + '%20' + urllib.parse.quote_plus(artist),
                                         headers={'Authorization': f'Bearer {TOKEN}'},
                                         timeout=aiohttp.ClientTimeout(total=5)) as res:
                     data = await res.json()

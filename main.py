@@ -37,7 +37,6 @@ CORS(app)
 def check_value(s: str, max_length: int = 200) -> bool:
     return (
         "/" in s
-        or "." in s
         or "%" in s
         or "\\" in s
         or "?" in s
@@ -45,6 +44,8 @@ def check_value(s: str, max_length: int = 200) -> bool:
         or len(s) > max_length
     )
 
+def cache_query(artist, title):
+    return artist.lower().replace(" ", "") + title.lower().replace(" ", "")
 
 @api.route("/share", methods=["POST"])
 async def share():
@@ -94,13 +95,13 @@ async def share():
 
 @api.route("/lyrics")
 async def getLyrics():
-    if check_value(request.args["t"]) or check_value(request.args["a"]):
+    if len(request.args["t"]) > 120 or len(request.args["a"]) > 120:
         return "poco chill da parte tua"
 
     title = request.args["t"]
     artist = request.args["a"]
 
-    cached_result = redis_conn.get(f"{artist}{title}")
+    cached_result = redis_conn.get(cache_query(artist, title))
     if not cached_result is None:
         data = json.loads(str(cached_result))
         if not prometheus is None:
@@ -159,7 +160,7 @@ async def getLyrics():
     if not prometheus is None:
         prometheus.searched_artists.labels(artist=data["author"]).inc()
 
-    redis_conn.set(f"{artist}{title}", json.dumps(data), ex=REDIS_CACHE_TIME)
+    redis_conn.set(cache_query(artist, title), json.dumps(data), ex=REDIS_CACHE_TIME)
 
     return data
 
