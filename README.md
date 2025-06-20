@@ -1,4 +1,4 @@
-# Sgrodolix
+# 📜 Sgrodolix
 Share song lyrics easily
 
 ## What is it?
@@ -56,3 +56,6 @@ To make Sgrodolix faster, you can enable search result caching using Redis.
 - `BOTTOM_TEXT`: Change the bottom text in the shared image
 - `CANVAS`: Canvas size — the lower it is, the faster the API will be, but obviously the quality will be worse.
 - `NOT_FOUND_MSG`: If you want to change the "404 song not found" error message
+
+## Special thanks to
+- [Lorix ❤️](https://github.com/loricso) - he made the frontend
