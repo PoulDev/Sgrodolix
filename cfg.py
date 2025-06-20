@@ -8,7 +8,7 @@ PROMETHEUS_ENABLED = False
 PROMETHEUS_TOKEN = "CHANGE-ME"
 
 # Search results caching with Redis
-REDIS_CACHING_ENABLED = True
+REDIS_CACHING_ENABLED = False
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 REDIS_PASSWORD = None # Set the password if you have one
