@@ -11,8 +11,8 @@ from flask import Blueprint, Flask, request, send_file
 from flask_cors import CORS
 
 from cfg import (BASE_PATH, HOST, NOT_FOUND_MSG, PROMETHEUS_ENABLED,
-                 REDIS_CACHE_TIME, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT,
-                 TOKEN)
+                 REDIS_CACHE_TIME, REDIS_CACHING_ENABLED, REDIS_HOST,
+                 REDIS_PASSWORD, REDIS_PORT, TOKEN)
 from genius import (download_cover, get_local_cover, getHeaders,
                     load_local_song, parseAuthor, parseImg, parseLyrics,
                     parseTitle, parseTitleFromLyrics, search, update_data)
@@ -21,7 +21,16 @@ from stats.stats import Prometheus, stats
 
 genius = lg.Genius(TOKEN)
 
-redis_conn: redis.StrictRedis
+if REDIS_CACHING_ENABLED:
+    redis_conn = redis.StrictRedis(
+        host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD, decode_responses=True
+    )
+
+    try:
+        redis_conn.ping()
+    except redis.ConnectionError:
+        print("Unable to connect to Redis.")
+        exit(1)
 
 api = Blueprint("api", __name__, url_prefix="/api")
 app = Flask(__name__)
@@ -36,16 +45,13 @@ CORS(app)
 
 def check_value(s: str, max_length: int = 200) -> bool:
     return (
-        "/" in s
-        or "%" in s
-        or "\\" in s
-        or "?" in s
-        or "&" in s
-        or len(s) > max_length
+        "/" in s or "%" in s or "\\" in s or "?" in s or "&" in s or len(s) > max_length
     )
+
 
 def cache_query(artist, title):
     return artist.lower().replace(" ", "") + title.lower().replace(" ", "")
+
 
 @api.route("/share", methods=["POST"])
 async def share():
@@ -101,7 +107,8 @@ async def getLyrics():
     title = request.args["t"]
     artist = request.args["a"]
 
-    cached_result = redis_conn.get(cache_query(artist, title))
+    
+    cached_result = redis_conn.get(cache_query(artist, title)) if REDIS_CACHING_ENABLED else None
     if not cached_result is None:
         data = json.loads(str(cached_result))
         if not prometheus is None:
@@ -160,13 +167,15 @@ async def getLyrics():
     if not prometheus is None:
         prometheus.searched_artists.labels(artist=data["author"]).inc()
 
-    redis_conn.set(cache_query(artist, title), json.dumps(data), ex=REDIS_CACHE_TIME)
+    if REDIS_CACHING_ENABLED:
+        redis_conn.set(cache_query(artist, title), json.dumps(data), ex=REDIS_CACHE_TIME)
 
     return data
 
 
 @api.errorhandler(500)
 def internal(error):
+    print(type(error), error)
     return {"err": True, "msg": "Buttata di fuori"}
 
 
@@ -188,15 +197,5 @@ if __name__ == "__main__":
         os.mkdir(COVERS_PATH)
     if not os.path.exists(DATA_PATH):
         os.mkdir(DATA_PATH)
-
-    redis_conn = redis.StrictRedis(
-        host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD, decode_responses=True
-    )
-
-    try:
-        redis_conn.ping()
-    except redis.ConnectionError:
-        print("Unable to connect to Redis.")
-        exit(1)
 
     app.run(HOST[0], HOST[1], debug=False)
