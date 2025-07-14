@@ -84,21 +84,66 @@ def parseAuthor(content):
     return author
 
 def parseImg(content, song_id):
+    # Genius keeps changing where they put their fucking cover image, so
+    # I'll just keep adding the new methods without removing the old ones,
+    # because I don't know which one are deprecated and which one are not.
+    # Let's maximise the success rate i guess
+
     soup = BeautifulSoup(content, 'html.parser')
-    img = soup.find('img', class_=re.compile(r'SizedImage\w+'), attrs={"src": re.compile(r'https://images.genius.com/\w+')})
-    if img is None:
-        for im in soup.find_all('img', attrs={'class': re.compile(r'SizedImage-.*SongHeader-desktop-.*')}):
-            if im.get('src') is None: continue
-            img = im['src']
-            break
-    else:
-        img = img['src']
+    img_url = None
+    
+    # Method N. 1 - Big album cover on the page
+    img = soup.find('img', class_=re.compile(r'SizedImage.*'), attrs={"src": re.compile(r'https:\/\/.*')})
+    if not img is None:
+        img_url = img['src']
 
-    if img is None: 
-        # Get the image from apple music :|
-        return appleMusicImage(song_id)
+    if img_url: return img_url
 
-    return img
+    # Method N. 2 - Album cover in the <meta> tag
+    meta = soup.find('meta', attrs={"property": "og:image"})
+    if not meta is None:
+        img_url = meta['content']
+
+    if img_url: return img_url
+
+    # Method N. 3 - Album cover in another <meta> tag...
+    meta = soup.find('meta', attrs={"property": "twitter:image"})
+    if not meta is None:
+        img_url = meta['content']
+
+    if img_url: return img_url
+
+    # Method N. 4 - Album cover in some stupid json metadata
+    # This could be useful but it doesn't work in the current state
+    '''
+    substr = '\\"imageUrl\\":'
+    try:
+        index = content.index(substr) + len(substr)
+        section = content[index:]
+        start = section.index('"') + 1
+        end = section.index('"', start)
+        img_url = section[start:end]
+    except:
+        img_url = None
+
+    if img_url: return img_url
+    '''
+
+    # Method N. 5 - I don't really remember how this works
+    for im in soup.find_all('img', attrs={'class': re.compile(r'SizedImage-.*SongHeader-desktop-.*')}):
+        if im.get('src') is None: continue
+        img = im
+        break
+
+    if not img is None: 
+        img_url = img['src']
+
+    if img_url: return img_url
+
+    # Method N. 6 - Get the image from apple music :/
+    img_url = appleMusicImage(song_id)
+
+    return img_url
 
 
 async def search(title, artist) -> dict | None:
