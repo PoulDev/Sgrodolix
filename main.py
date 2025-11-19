@@ -16,7 +16,7 @@ from cfg import (BASE_PATH, HOST, NOT_FOUND_MSG, PROMETHEUS_ENABLED,
 from genius import (download_cover, get_local_cover, getHeaders,
                     load_local_song, parseAuthor, parseImg, parseLyrics,
                     parseTitle, parseTitleFromLyrics, search, update_data)
-from share import getDominantColor, shareLyrics
+from share import getDominantColor, shareLyrics, shareQuote
 from stats.stats import Prometheus, stats
 
 genius = lg.Genius(TOKEN)
@@ -107,7 +107,6 @@ async def getLyrics():
     title = request.args["t"]
     artist = request.args["a"]
 
-    
     cached_result = redis_conn.get(cache_query(artist, title)) if REDIS_CACHING_ENABLED else None
     if not cached_result is None:
         data = json.loads(str(cached_result))
@@ -172,6 +171,26 @@ async def getLyrics():
 
     return data
 
+@api.route("/quote")
+async def getQuote():
+    quote = request.args["q"]
+    author = request.args["a"]
+    title = request.args["t"]
+
+    if len(quote) > 1250:
+        return {"err": True, "msg": "Quote too long!"}, 400
+
+    if len(author) > 120:
+        return {"err": True, "msg": "Author too long!"}, 400
+
+    if len(title) > 120:
+        return {"err": True, "msg": "Title too long!"}, 400
+
+    img_io = BytesIO()
+    img = shareQuote(quote, author, title)
+    img.save(img_io, "JPEG", quality=70)
+    img_io.seek(0)
+    return send_file(img_io, mimetype="image/jpeg")
 
 @api.errorhandler(500)
 def internal(error):
