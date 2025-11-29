@@ -1,7 +1,7 @@
 import requests
 from genius.scrape import parseAuthor, parseTitle, parseImg, parseLyrics, getHeaders
 
-content = requests.get('https://genius.com/Caparezza-la-grande-opera-lyrics', headers=getHeaders()).text
+content = requests.get('https://genius.com/Tonypitony-culo-lyrics', headers=getHeaders()).text
 
 with open('out.html', 'w', encoding='utf-8') as f:
     f.write(content)
