@@ -53,7 +53,11 @@ def parseLyrics(content) -> list[str]:
             lyrics += line.split('<br>')
 
     for exclude in soup.find_all('div', attrs={"data-exclude-from-selection": "true"}):
-        values = exclude.get_text(strip=True, separator='\n').splitlines()
+        for br in exclude.find_all('br'):
+            br.replace_with('<br>')
+
+        values = exclude.get_text(strip=True).splitlines()
+
         for value in values:
             if value in lyrics:
                 lyrics.remove(value)
