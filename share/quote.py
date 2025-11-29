@@ -122,13 +122,13 @@ def shareQuote(quote: str, author: str, title: str, top_margin = 80, fixed = Fal
             fill=TEXT_COLOR, font=Ftitle
         )
     
-    width = Fauthor.getbbox('~ ' + author)[2]
-
-    draw.text(
-        (left_margin + 336*2 - width, top_margin + offset + FQuoteSignSize),
-        '~ ' + author,
-        fill=TEXT_COLOR, font=Fauthor
-    )
+    if author:
+        width = Fauthor.getbbox('~ ' + author)[2]
+        draw.text(
+            (left_margin + 336*2 - width, top_margin + offset + FQuoteSignSize),
+            '~ ' + author,
+            fill=TEXT_COLOR, font=Fauthor
+        )
 
     jpg = Image.new("RGB", original.size, (255, 255, 255))
     jpg.paste(original, mask=original.split()[3])
