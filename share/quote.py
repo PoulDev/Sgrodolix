@@ -78,7 +78,7 @@ def shareQuote(quote: str, author: str, title: str, top_margin = 80, fixed = Fal
 
     lines = []
 
-    maxLineLength = 336 * 2 / FQuote.getbbox('a')[2]
+    maxLineLength = 344 * 2 / FQuote.getbbox('a')[2]
     maxTitleLength = 390 * 2 / Ftitle.getbbox('a')[2]
 
     for i, line in enumerate(quote.splitlines()):
