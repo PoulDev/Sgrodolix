@@ -50,6 +50,12 @@ def parseLyrics(content) -> list[str]:
 
         lyrics += tag.get_text(strip=True, separator='\n').splitlines()
 
+    for exclude in soup.find_all('div', attrs={"data-exclude-from-selection": "true"}):
+        values = exclude.get_text(strip=True, separator='\n').splitlines()
+        for value in values:
+            if value in lyrics:
+                lyrics.remove(value)
+
     return lyrics
 
 def parseTitle(content):
