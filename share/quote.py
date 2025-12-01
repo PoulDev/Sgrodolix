@@ -6,6 +6,7 @@ from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw 
 
+from cfg import BOTTOM_TEXT
 from wikipedia.search import get_author_image
 
 TEXT_COLOR = '#202020'
@@ -129,6 +130,13 @@ def shareQuote(quote: str, author: str, title: str, top_margin = 80, fixed = Fal
             '~ ' + author,
             fill=TEXT_COLOR, font=Fauthor
         )
+
+    w = Fauthor.getbbox(BOTTOM_TEXT)[2]
+    draw.text(
+        (int(original.getbbox()[2]/2-w/2), 720*2),
+        BOTTOM_TEXT,
+        fill=TEXT_COLOR, font=Fauthor
+    )
 
     jpg = Image.new("RGB", original.size, (255, 255, 255))
     jpg.paste(original, mask=original.split()[3])

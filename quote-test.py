@@ -1,5 +1,5 @@
 import os
-from share.quote import shareQuoteWithImage, shareQuote
+from share.quote import shareQuote
 import webbrowser
 
 if __name__ == '__main__':
