@@ -171,11 +171,12 @@ async def getLyrics():
 
     return data
 
-@api.route("/quote")
+@api.route("/quote", methods=['POST'])
 async def getQuote():
-    quote = request.args["q"]
-    author = request.args["a"]
-    title = request.args["t"]
+    data = request.get_json()
+    quote = data['quote']
+    author = data['author']
+    title = data['title']
 
     if len(quote) > 1250:
         return {"err": True, "msg": "Quote too long!"}, 400
