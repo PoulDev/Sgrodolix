@@ -83,6 +83,11 @@ def shareQuote(quote: str, author: str, title: str, top_margin = 80, fixed = Fal
     maxTitleLength = 390 * 2 / Ftitle.getbbox('a')[2]
 
     for i, line in enumerate(quote.splitlines()):
+        if line == '':
+            lines.append((offset, ''))
+            offset += SPACING
+            continue
+
         for line in textwrap.wrap(line, width=int(maxLineLength)):
             w = FQuote.getbbox(line)[2]
             if w > maxw:

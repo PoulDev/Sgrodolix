@@ -1,3 +1,4 @@
+'''
 import requests
 from genius.scrape import parseAuthor, parseTitle, parseImg, parseLyrics, getHeaders
 
@@ -10,4 +11,17 @@ print('\n'.join(parseLyrics(content)))
 print(parseAuthor(content))
 print(parseTitle(content))
 print(parseImg(content, None))
+'''
 
+from share.quote import shareQuote
+
+img = shareQuote('''\
+Di che reggimento siete
+fratelli?
+
+Parola tremante
+nella notte
+
+Foglia appena nata\
+''', 'Giuseppe Ungaretti', 'Fratelli')
+img.show()
