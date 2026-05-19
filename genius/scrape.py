@@ -45,33 +45,23 @@ def parseLyrics(content) -> list[str]:
     lyrics = []
 
     for tag in soup.find_all('div', attrs={"data-lyrics-container": "true"}):
-        for br in tag.find_all('br'):
-            br.replace_with('<br>')
-
-        text = tag.get_text(strip=True).splitlines()
-        for line in text:
-            lyrics += line.split('<br>')
-
-    for exclude in soup.find_all('div', attrs={"data-exclude-from-selection": "true"}):
-        for br in exclude.find_all('br'):
-            br.replace_with('<br>')
-
-        values = exclude.get_text(strip=True).splitlines()
-
-        for value in values:
-            if value in lyrics:
-                lyrics.remove(value)
+        text = tag.get_text(separator='<br/>', strip=True)
+        lines = [line.strip() for line in text.split('<br/>') if line.strip()]
+        lyrics.extend(lines)
 
     return lyrics
 
 def parseTitle(content):
-    # SongHeader-desktop__HiddenMask-sc-ffb24f94-11 dHpSmS
     soup = BeautifulSoup(content, 'html.parser')
-    title = soup.find('span', class_=re.compile('SongHeader.{0,5}-desktop'))
+    title = soup.find('h1', class_=re.compile('SongHeader.*desktop.*Title'))
     if title is None:
         title = 'Unknown'
     else:
-        title = title.get_text()
+        span = title.find('span', class_=re.compile('SongHeader.*desktop.*HiddenMask'))
+        if span:
+            title = span.get_text()
+        else:
+            title = title.get_text()
 
     return title
 
@@ -87,7 +77,7 @@ def parseTitleFromLyrics(lyrics):
 
 def parseAuthor(content):
     soup = BeautifulSoup(content, 'html.parser')
-    author = soup.find('a', class_=lambda x: x and 'StyledLink' in x, attrs={"href": re.compile(r'^https://genius.com/artists/\w+')})
+    author = soup.find('a', class_=re.compile('StyledLink'), href=re.compile(r'^https://genius.com/artists/'))
     if author is None:
         author = 'Unknown'
     else:
@@ -96,63 +86,29 @@ def parseAuthor(content):
     return author
 
 def parseImg(content, song_id):
-    # Genius keeps changing where they put their fucking cover image, so
-    # I'll just keep adding the new methods without removing the old ones,
-    # because I don't know which one are deprecated and which one are not.
-    # Let's maximise the success rate i guess
-
     soup = BeautifulSoup(content, 'html.parser')
     img_url = None
     
-    # Method N. 1 - Big album cover on the page
-    img = soup.find('img', class_=re.compile(r'SizedImage.*'), attrs={"src": re.compile(r'https:\/\/.*')})
-    if not img is None:
-        img_url = img['src']
-
-    if img_url: return img_url
-
-    # Method N. 2 - Album cover in the <meta> tag
     meta = soup.find('meta', attrs={"property": "og:image"})
-    if not meta is None:
+    if meta and meta.get('content'):
         img_url = meta['content']
 
     if img_url: return img_url
 
-    # Method N. 3 - Album cover in another <meta> tag...
-    meta = soup.find('meta', attrs={"property": "twitter:image"})
-    if not meta is None:
-        img_url = meta['content']
-
-    if img_url: return img_url
-
-    # Method N. 4 - Album cover in some stupid json metadata
-    # This could be useful but it doesn't work in the current state
-    '''
-    substr = '\\"imageUrl\\":'
-    try:
-        index = content.index(substr) + len(substr)
-        section = content[index:]
-        start = section.index('"') + 1
-        end = section.index('"', start)
-        img_url = section[start:end]
-    except:
-        img_url = None
-
-    if img_url: return img_url
-    '''
-
-    # Method N. 5 - I don't really remember how this works
-    for im in soup.find_all('img', attrs={'class': re.compile(r'SizedImage-.*SongHeader-desktop-.*')}):
-        if im.get('src') is None: continue
-        img = im
-        break
-
-    if not img is None: 
+    img = soup.find('img', class_=re.compile(r'SizedImage.*Image.*'), attrs={"src": re.compile(r'https:\/\/.*')})
+    if img and img.get('src'):
         img_url = img['src']
 
     if img_url: return img_url
 
-    # Method N. 6 - Get the image from apple music :/
+    for im in soup.find_all('noscript'):
+        img_tag = im.find('img', class_=re.compile(r'SizedImage__NoScript'))
+        if img_tag and img_tag.get('src'):
+            img_url = img_tag['src']
+            break
+
+    if img_url: return img_url
+
     img_url = appleMusicImage(song_id)
 
     return img_url
