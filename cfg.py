@@ -31,6 +31,17 @@ BOTTOM_TEXT = 'www.sgrodolix.website'
 # and invert the width with the height.
 CANVAS = (864, 1536)
 
+# Proxies for scraping Genius (avoid IP blocks)
+PROXIES = []  # e.g. ['http://user:pass@host:port', 'http://host2:port2']
+
+import random
+
+def get_proxy():
+    """Return a random proxy from PROXIES, or None if the list is empty.
+    If you need to you can customize this function to implement your own
+    proxy selection logic."""
+    return random.choice(PROXIES) if PROXIES else None
+
 # Song not found error message: you can leave this at it is.
 NOT_FOUND_MSG = {
     'lyrics': [],

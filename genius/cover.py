@@ -5,10 +5,11 @@ import requests
 from PIL import Image
 from io import BytesIO
 
-from cfg import BASE_PATH
+from cfg import BASE_PATH, PROXIES, get_proxy
 from share import getAllDominantColors
 
 def get_remote_cover(song_id, cover_art_url):
+    # proxies={'http': get_proxy(), 'https': get_proxy()}
     photo = requests.get(cover_art_url).content
     im = Image.open(BytesIO(photo))
     im = im.resize((256, 256))

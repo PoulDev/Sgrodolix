@@ -12,7 +12,7 @@ from flask_cors import CORS
 
 from cfg import (BASE_PATH, HOST, NOT_FOUND_MSG, PROMETHEUS_ENABLED,
                  REDIS_CACHE_TIME, REDIS_CACHING_ENABLED, REDIS_HOST,
-                 REDIS_PASSWORD, REDIS_PORT, TOKEN)
+                 REDIS_PASSWORD, REDIS_PORT, TOKEN, PROXIES, get_proxy)
 from genius import (download_cover, get_local_cover, getHeaders,
                     load_local_song, parseAuthor, parseImg, parseLyrics,
                     parseTitle, parseTitleFromLyrics, search, update_data)
@@ -132,7 +132,8 @@ async def getLyrics():
     if not data or mustCorrect:
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                "https://genius.com" + search_res["path"], headers=getHeaders()
+                "https://genius.com" + search_res["path"], headers=getHeaders(),
+                proxy=get_proxy()
             ) as res:
                 res_data = await res.text()
 

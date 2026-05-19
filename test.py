@@ -13,15 +13,15 @@ print(parseTitle(content))
 print(parseImg(content, None))
 '''
 
-from share.quote import shareQuote
+import requests
+from genius.cover import get_remote_cover
+from share.share import shareLyrics
+from genius.scrape import parseAuthor, parseTitle, parseImg, parseLyrics, getHeaders
 
-img = shareQuote('''\
-Di che reggimento siete
-fratelli?
+content = requests.get('https://genius.com/Caparezza-ti-sorrido-mentre-affogo-lyrics', headers=getHeaders()).text
 
-Parola tremante
-nella notte
+with open('out.html', 'w', encoding='utf-8') as f:
+    f.write(content)
 
-Foglia appena nata\
-''', 'Giuseppe Ungaretti', 'Fratelli')
+img = shareLyrics(get_remote_cover('123', parseImg(content, '123')), parseAuthor(content), parseTitle(content), 'Se la sala è piena, il film fa schifo', '#b63236')
 img.show()
