@@ -1,7 +1,16 @@
+import random
+
 ### Hosting Options
 
 # IMPORTANT: GENIUS API TOKEN.
-TOKEN = 'CHANGE ME'
+TOKEN = 'CHANGE-ME'
+
+# LRCLIB API (no token required, but configurable for future use)
+LRCLIB_BASE_URL = 'https://lrclib.net/api'
+
+# SPOTIFY API — used for cover art fallback
+SPOTIFY_CLIENT_ID = 'CHANGE-ME'
+SPOTIFY_CLIENT_SECRET = 'CHANGE-ME'
 
 # PROMETHEUS STATS
 PROMETHEUS_ENABLED = False
@@ -33,8 +42,6 @@ CANVAS = (864, 1536)
 
 # Proxies for scraping Genius (avoid IP blocks)
 PROXIES = []  # e.g. ['http://user:pass@host:port', 'http://host2:port2']
-
-import random
 
 def get_proxy():
     """Return a random proxy from PROXIES, or None if the list is empty.

@@ -13,9 +13,8 @@ from flask_cors import CORS
 from cfg import (BASE_PATH, HOST, NOT_FOUND_MSG, PROMETHEUS_ENABLED,
                  REDIS_CACHE_TIME, REDIS_CACHING_ENABLED, REDIS_HOST,
                  REDIS_PASSWORD, REDIS_PORT, TOKEN, PROXIES, get_proxy)
-from genius import (download_cover, get_local_cover, getHeaders,
-                    load_local_song, parseAuthor, parseImg, parseLyrics,
-                    parseTitle, parseTitleFromLyrics, search, update_data)
+from genius import (download_cover, get_local_cover, load_local_song, update_data)
+from lyrics_providers import search_lyrics
 from share import getDominantColor, shareLyrics, shareQuote
 from stats.stats import Prometheus, stats
 
@@ -76,7 +75,6 @@ async def share():
     if res == {} or im is None:
         return {"err": True, "msg": "No image found :("}, 500
 
-    # Check if the color is valid ( accepted: #fff, #ffffff, #ffffffff (RGB & RGBA) )
     if len(color) not in (8, 6, 3):
         color = None
     else:
@@ -114,56 +112,19 @@ async def getLyrics():
             prometheus.searched_artists.labels(artist=data["author"]).inc()
         return cached_result
 
-    search_res = await search(title, artist)
+    data = await search_lyrics(title, artist)
 
-    if search_res is None:
+    if data is None:
         return NOT_FOUND_MSG
 
-    song_id = search_res["api_path"].split("/")[2]
+    song_id = data["song_id"]
 
-    data = await load_local_song(song_id)
-    mustCorrect = (
-        data.get("title") == "Unkown"
-        or data.get("author") == "Unknown"
-        or data.get("cover", {}).get("url") is None
-    )
+    update_data(song_id, data)
 
-    # Update song data
-    if not data or mustCorrect:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                "https://genius.com" + search_res["path"], headers=getHeaders(),
-                proxy=get_proxy()
-            ) as res:
-                res_data = await res.text()
-
-        lyrics = parseLyrics(res_data)
-        title = parseTitle(res_data)
-        if title == "Unknown":
-            title = parseTitleFromLyrics(lyrics)
-
-        data.update(
-            {
-                "lyrics": lyrics,
-                "title": title,
-                "author": parseAuthor(res_data),
-                "cover": {"url": parseImg(res_data, song_id)},
-                "song_id": song_id,
-            }
-        )
-
-        update_data(song_id, data)
-
-    # Update song cover
-    if (
-        mustCorrect
-        or not os.path.exists(f"{BASE_PATH}/cache/covers/{song_id}.jpg")
-        or not os.path.exists(f"{BASE_PATH}/cache/metadata/{song_id}.json")
-    ):
+    if data.get("cover", {}).get("url") is not None:
         thread = threading.Thread(target=download_cover, args=(data,))
         thread.start()
 
-    # Collect analytics
     if not prometheus is None:
         prometheus.searched_artists.labels(artist=data["author"]).inc()
 
