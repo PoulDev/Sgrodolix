@@ -23,15 +23,20 @@ def strip_timestamps(lyrics: str) -> list[str]:
 class LRCLibProvider(LyricsProvider):
     async def search(self, title: str, artist: str) -> Optional[dict]:
         async with aiohttp.ClientSession() as session:
+            data = None
             try:
                 url = f'https://lrclib.net/api/search?track_name={urllib.parse.quote(title)}&artist_name={urllib.parse.quote(artist)}'
+                headers = {'User-Agent': 'sgrodolix/1.0'}
                 async with session.get(url,
+                                       headers=headers,
                                        timeout=aiohttp.ClientTimeout(total=10),
                                        proxy=get_proxy()) as res:
                     if res.status != 200:
+                        logging.warning('LRCLib returned status %d', res.status)
                         return None
                     data = await res.json()
-            except (aiohttp.ClientError, TimeoutError):
+                    logging.debug('LRCLib response: %s', data)
+            except (aiohttp.ClientError, TimeoutError, aiohttp.ContentTypeError):
                 logging.exception('LRCLib search failed')
                 return None
 
