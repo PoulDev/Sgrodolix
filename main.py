@@ -4,7 +4,7 @@ import threading
 import time
 from io import BytesIO
 
-import aiohttp
+import logging
 import lyricsgenius as lg
 import redis
 from flask import Blueprint, Flask, request, send_file
@@ -106,13 +106,12 @@ async def getLyrics():
     artist = request.args["a"]
 
     cached_result = redis_conn.get(cache_query(artist, title)) if REDIS_CACHING_ENABLED else None
-    if not cached_result is None:
-        data = json.loads(str(cached_result))
-        if not prometheus is None:
-            prometheus.searched_artists.labels(artist=data["author"]).inc()
-        return cached_result
+    from_cache = not cached_result is None
 
-    data = await search_lyrics(title, artist)
+    if from_cache:
+        data = json.loads(str(cached_result))
+    else:
+        data = await search_lyrics(title, artist)
 
     if data is None:
         return NOT_FOUND_MSG
@@ -124,11 +123,13 @@ async def getLyrics():
     if data.get("cover", {}).get("url") is not None:
         thread = threading.Thread(target=download_cover, args=(data,))
         thread.start()
+    elif not from_cache:
+        logging.warning(f"No cover found for {artist} - {title}")
 
     if not prometheus is None:
         prometheus.searched_artists.labels(artist=data["author"]).inc()
 
-    if REDIS_CACHING_ENABLED:
+    if REDIS_CACHING_ENABLED and not from_cache:
         redis_conn.set(cache_query(artist, title), json.dumps(data), ex=REDIS_CACHE_TIME)
 
     return data
